@@ -1,26 +1,50 @@
 import sys
 
-from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QPushButton, QLabel, QTableWidget, QTableWidgetItem, \
+from PyQt6.QtWidgets import QMessageBox, QApplication, QWidget, QVBoxLayout, QPushButton, QLabel, QTableWidget, QTableWidgetItem, \
     QHBoxLayout
 from PyQt6.QtGui import QColor
+from VoltageReader import VoltageReader
 
 standard_voltage_value = 15
-epsilon = 1e-2
+epsilon = 1e-1
 
-# Sample batteryData
-batteryData = []
-for arm_index in range(8):
-    for battery_index in range(6):
-        voltage_value = standard_voltage_value + (arm_index - 4) * epsilon  # This will create some yellow cells
-        if arm_index == 0 and battery_index == 0:  # Make one cell red for testing
-            voltage_value = -1
-        batteryData.append([arm_index, battery_index, voltage_value])
+# # Sample batteryData
+# batteryData = []
+# for arm_index in range(8):
+#     for battery_index in range(6):
+#         voltage_value = standard_voltage_value + (arm_index - 4) * epsilon  # This will create some yellow cells
+#         if arm_index == 0 and battery_index == 0:  # Make one cell red for testing
+#             voltage_value = -1
+#         batteryData.append([arm_index, battery_index, voltage_value])
+
+
+def show_popup(message):
+    msg = QMessageBox()
+    msg.setWindowTitle("Alert")
+    msg.setText(message)
+    msg.setIcon(QMessageBox.Icon.Information)
+    msg.setStandardButtons(QMessageBox.StandardButton.Ok)
+    msg.exec()
+
 
 class BatteryCheckPage(QWidget):
     def __init__(self, main_page):
         super().__init__()
         self.main_page = main_page
         self.setWindowTitle("Battery Check Page")
+
+        self.reader_list = []
+        for i in range(8):
+            reader = VoltageReader(i)
+            if reader.board is None:
+                show_popup(f'Cannot read from board ${i}!')
+            self.reader_list.append(reader)
+
+        batteryData = []
+        for arm_index in range(8):
+            row_data = self.reader_list[arm_index].get_voltage()[:-1]
+            for battery_index, voltage_value in enumerate(row_data):
+                batteryData.append([arm_index, battery_index, voltage_value])
 
         layout = QVBoxLayout()
 
